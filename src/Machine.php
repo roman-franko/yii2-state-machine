@@ -15,13 +15,14 @@ class Machine extends Behavior
     public $model_label = '';
     public $namespace = '';
     public $transitions = array();
+    public $statuses_classes = [];
     private $options = array();
     private $temporary = null;
 
 
     public function events()
     {
-        if($this->owner->scenario == "search")
+        if ($this->owner->scenario == "search")
             return [];
 
         return [
@@ -35,7 +36,7 @@ class Machine extends Behavior
     public function convertToString($event)
     {
         $this->temporary = $this->owner->{$this->attr};
-        $this->owner->{$this->attr} = $this->temporary."";
+        $this->owner->{$this->attr} = $this->temporary . "";
         return true;
     }
 
@@ -54,23 +55,23 @@ class Machine extends Behavior
     {
         parent::attach($owner);
 
-        if($this->owner->scenario == "search")
+        if ($this->owner->scenario == "search")
             return true;
 
-        if (empty($this->initial))
+        if (!is_int($this->initial) && empty($this->initial)) {
             throw new Exception("It's required to set an initial state");
+        }
 
         if (empty($this->model_label))
             throw new Exception("It's required to set a model label");
 
         if (empty($this->namespace))
-            $this->namespace = strtolower(get_class($this->owner)).'\\status';
+            $this->namespace = strtolower(get_class($this->owner)) . '\\status';
 
 
         $this->options = array_keys($this->transitions);
 
-        foreach ($this->transitions as $k => $t)
-        {
+        foreach ($this->transitions as $k => $t) {
             if (!is_array($t))
                 $this->transitions[$k] = explode(",", $t);
             else
@@ -90,19 +91,23 @@ class Machine extends Behavior
 
     public function getClassName($id)
     {
-        return $this->namespace."\\".str_replace(" ", "", ucwords(str_replace(array("_", "-"), array(" "," "), $id)));
+        return $this->namespace . "\\" . str_replace(" ", "", ucwords(str_replace(array("_", "-"), array(" ", " "), $id)));
     }
 
     public function getStatusObject($id)
     {
-        $className = $this->getClassName($id);
+        if (is_object($id))
+            return $id;
+        $className = $this->statuses_classes
+            ? $this->statuses_classes[$id]
+            : $this->getClassName($id);
         return new $className;
     }
 
     private function setStatus($id)
     {
-        if (!in_array($id, $this->options))
-            throw new Exception('Status not avaiable ('.$id.')');
+        if (is_int($id) && !in_array($id, $this->options))
+            throw new Exception('Status not avaiable (' . $id . ')');
 
         $this->owner->{$this->attr} = $this->getStatusObject($id);
         $this->owner->{$this->attr}->stateBehavior = $this;
@@ -123,26 +128,18 @@ class Machine extends Behavior
     public function canChangeTo($id)
     {
         return in_array($id, $this->options) &&
-        in_array($id, $this->transitions[$this->getStatusId()]) && $this->owner->{$this->attr}->canChangeTo($id);
+            in_array($id, $this->transitions[$this->getStatusId()]) && $this->owner->{$this->attr}->canChangeTo($id);
     }
 
     public function allowedStatusChanges()
     {
-        $allowedStatus = $this->transitions[$this->getStatusId()];
-        $allowedStatus = array_filter(
-            $allowedStatus,
-            function ($status){
-                return $this->owner->{$this->attr}->canChangeTo($status);
-            }
-        );
-        return $allowedStatus;
+        return $this->transitions[$this->getStatusId()];
     }
 
     public function getAvailableStatus()
     {
         $availableStatus = [];
-        foreach($this->transitions as $status=>$transitions)
-        {
+        foreach ($this->transitions as $status => $transitions) {
             $availableStatus[$status] = $this->getStatusObject($status)->label;
         }
 
@@ -152,15 +149,14 @@ class Machine extends Behavior
     public function getAvailableStatusObjects()
     {
         $availableStatus = [];
-        foreach($this->transitions as $status=>$transitions)
-        {
+        foreach ($this->transitions as $status => $transitions) {
             $availableStatus[$status] = $this->getStatusObject($status);
         }
 
         return $availableStatus;
     }
 
-    public function changeTo($id, $data=array(), $force = false)
+    public function changeTo($id, $data = array(), $force = false)
     {
         $oldStatusId = $this->getStatusId();
 
@@ -170,21 +166,17 @@ class Machine extends Behavior
 
 
         if (!$this->canChangeTo($id) && $force === false)
-            throw new BadRequestHttpException('Não é possível alterar '. $this->model_label .' do estado '.$this->getStatus()->label.' para o estado '.$this->getStatusObject($id)->label);
+            throw new BadRequestHttpException('Não é possível alterar ' . $this->model_label . ' do estado ' . $this->getStatus()->label . ' para o estado ' . $this->getStatusObject($id)->label);
 
         $event = new Event(['data' => $data]);
-        if($this->owner->{$this->attr}->onExit($id, $event))
-        {
+        if ($this->owner->{$this->attr}->onExit($id, $event)) {
             $this->setStatus($id);
-            if(!$this->owner->{$this->attr}->onEntry($id, $event))
-            {
+            if (!$this->owner->{$this->attr}->onEntry($id, $event)) {
                 $this->setStatus($oldStatusId);
                 return false;
             }
 
             return true;
         }
-
     }
-
 }
