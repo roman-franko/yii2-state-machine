@@ -2,8 +2,8 @@
 
 This package enable state machine usage into attributes of a Model (Active Record).
 
-[![Latest Stable Version](https://poser.pugx.org/conceptho/yii2-state-machine/v/stable)](https://packagist.org/packages/conceptho/yii2-state-machine)
-[![Total Downloads](https://poser.pugx.org/conceptho/yii2-state-machine/downloads.png)](https://packagist.org/packages/conceptho/yii2-state-machine)
+[![Latest Stable Version](https://poser.pugx.org/romanfranko/yii2-state-machine/v/stable)](https://packagist.org/packages/romanfranko/yii2-state-machine)
+[![Total Downloads](https://poser.pugx.org/romanfranko/yii2-state-machine/downloads.png)](https://packagist.org/packages/romanfranko/yii2-state-machine)
 
 Installation
 ------------
@@ -13,13 +13,13 @@ The preferred way to install this extension is through [composer](http://getcomp
 Either run
 
 ```
-composer require conceptho/yii2-state-machine
+composer require romanfranko/yii2-state-machine
 ```
 
 or add
 
 ```json
-"conceptho/yii2-state-machine": "dev-master"
+"romanfranko/yii2-state-machine": "dev-master"
 ```
 
 to the `require` section of your composer.json.
@@ -43,7 +43,7 @@ class User extends \yii\db\ActiveRecord {
     public function behaviors() {
         return \yii\helpers\ArrayHelper::merge(parent::behvaiors(), [
             [
-                'class' => conceptho\state\Machine::class,
+                'class' => romanfranko\state\Machine::class,
                 'initial' => 'active', /// Initial status
                 'attr' => 'status', /// Attribute that will use this state machine
                 'namespace' => 'app\models\status\user', /// Namespace for the Status class definitions
@@ -64,7 +64,7 @@ Status definitions:
 /// Active status
 namespace app\models\status\user;
 
-use conceptho\state\Status;
+use romanfranko\state\Status;
 
 class Active extends Status {
     public const ID = 'active';
@@ -90,7 +90,7 @@ class Active extends Status {
 /// Inactive Status
 namespace app\models\status\user;
 
-use conceptho\state\Status;
+use romanfranko\state\Status;
 
 class Inactive extends Status {
     public const ID = 'inactive';
@@ -116,7 +116,7 @@ class Inactive extends Status {
 /// Disabled Status
 namespace app\models\status\user;
 
-use conceptho\state\status;
+use romanfranko\state\status;
 
 class Disabled extends Status {
     public const ID = 'disabled';
